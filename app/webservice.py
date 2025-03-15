@@ -1,5 +1,6 @@
 import importlib.metadata
 import os
+import tempfile
 from os import path
 from typing import Annotated, Optional, Union
 from urllib.parse import quote
@@ -63,13 +64,13 @@ async def asr(
         bool | None,
         Query(
             description="Enable the voice activity detection (VAD) to filter out parts of the audio without speech",
-            include_in_schema=(True if CONFIG.ASR_ENGINE == "faster_whisper" else False),
+            include_in_schema=(True if CONFIG.ASR_ENGINE in ["faster_whisper", "faster_whisper_xxl"] else False),
         ),
     ] = False,
     word_timestamps: bool = Query(
         default=False,
         description="Word level timestamps",
-        include_in_schema=(True if CONFIG.ASR_ENGINE == "faster_whisper" else False),
+        include_in_schema=(True if CONFIG.ASR_ENGINE in ["faster_whisper", "faster_whisper_xxl"] else False),
     ),
     diarize: bool = Query(
         default=False,
@@ -88,16 +89,45 @@ async def asr(
     ),
     output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"]),
 ):
-    result = asr_model.transcribe(
-        load_audio(audio_file.file, encode),
-        task,
-        language,
-        initial_prompt,
-        vad_filter,
-        word_timestamps,
-        {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
-        output,
-    )
+    # For faster_whisper_xxl, save the file to a temporary location and pass the path
+    if CONFIG.ASR_ENGINE == "faster_whisper_xxl":
+        # Create a temporary file to save the uploaded content
+        suffix = os.path.splitext(audio_file.filename)[1] if audio_file.filename else ".tmp"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+            temp_file_path = temp_file.name
+            # Save the uploaded file content
+            content = await audio_file.read()
+            temp_file.write(content)
+
+        try:
+            # Pass the file path directly to the ASR model
+            result = asr_model.transcribe(
+                temp_file_path,
+                task,
+                language,
+                initial_prompt,
+                vad_filter,
+                word_timestamps,
+                {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
+                output,
+            )
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+    else:
+        # For other engines, use the existing flow
+        result = asr_model.transcribe(
+            load_audio(audio_file.file, encode),
+            task,
+            language,
+            initial_prompt,
+            vad_filter,
+            word_timestamps,
+            {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
+            output,
+        )
+
     return StreamingResponse(
         result,
         media_type="text/plain",
@@ -113,7 +143,27 @@ async def detect_language(
     audio_file: UploadFile = File(...),  # noqa: B008
     encode: bool = Query(default=True, description="Encode audio first through FFmpeg"),
 ):
-    detected_lang_code, confidence = asr_model.language_detection(load_audio(audio_file.file, encode))
+    # For faster_whisper_xxl, save the file to a temporary location and pass the path
+    if CONFIG.ASR_ENGINE == "faster_whisper_xxl":
+        # Create a temporary file to save the uploaded content
+        suffix = os.path.splitext(audio_file.filename)[1] if audio_file.filename else ".tmp"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+            temp_file_path = temp_file.name
+            # Save the uploaded file content
+            content = await audio_file.read()
+            temp_file.write(content)
+
+        try:
+            # Pass the file path directly to the ASR model
+            detected_lang_code, confidence = asr_model.language_detection(temp_file_path)
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+    else:
+        # For other engines, use the existing flow
+        detected_lang_code, confidence = asr_model.language_detection(load_audio(audio_file.file, encode))
+
     return {
         "detected_language": tokenizer.LANGUAGES[detected_lang_code],
         "language_code": detected_lang_code,

@@ -14,6 +14,7 @@ Current release (v1.8.2) supports following whisper models:
 - [openai/whisper](https://github.com/openai/whisper)@[v20240930](https://github.com/openai/whisper/releases/tag/v20240930)
 - [SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper)@[v1.1.0](https://github.com/SYSTRAN/faster-whisper/releases/tag/v1.1.0)
 - [whisperX](https://github.com/m-bain/whisperX)@[v3.1.1](https://github.com/m-bain/whisperX/releases/tag/v3.1.1)
+- [Faster-Whisper-XXL](https://github.com/Purfview/whisper-standalone-win) - A standalone optimized whisper implementation
 
 ## Quick Usage
 
@@ -35,6 +36,14 @@ docker run -d --gpus all -p 9000:9000 \
   onerahmet/openai-whisper-asr-webservice:latest-gpu
 ```
 
+### Using Faster-Whisper-XXL
+
+```shell
+docker run -d --gpus all -p 9000:9000 \
+  -e ASR_ENGINE=faster_whisper_xxl \
+  onerahmet/openai-whisper-asr-webservice:latest-gpu
+```
+
 #### Cache
 
 To reduce container startup time by avoiding repeated downloads, you can persist the cache directory:
@@ -47,7 +56,7 @@ docker run -d -p 9000:9000 \
 
 ## Key Features
 
-- Multiple ASR engines support (OpenAI Whisper, Faster Whisper, WhisperX)
+- Multiple ASR engines support (OpenAI Whisper, Faster Whisper, WhisperX, Faster-Whisper-XXL)
 - Multiple output formats (text, JSON, VTT, SRT, TSV)
 - Word-level timestamps support
 - Voice activity detection (VAD) filtering
@@ -61,11 +70,17 @@ docker run -d -p 9000:9000 \
 
 Key configuration options:
 
-- `ASR_ENGINE`: Engine selection (openai_whisper, faster_whisper, whisperx)
+- `ASR_ENGINE`: Engine selection (openai_whisper, faster_whisper, whisperx, faster_whisper_xxl)
 - `ASR_MODEL`: Model selection (tiny, base, small, medium, large-v3, etc.)
 - `ASR_MODEL_PATH`: Custom path to store/load models
 - `ASR_DEVICE`: Device selection (cuda, cpu)
 - `MODEL_IDLE_TIMEOUT`: Timeout for model unloading
+
+### Faster-Whisper-XXL Specific Options
+
+- `FASTER_WHISPER_XXL_PATH`: Path to the Faster-Whisper-XXL executable
+- `FASTER_WHISPER_XXL_MAX_GAP`: Maximum gap between subtitle segments (default: 1.0)
+- `FASTER_WHISPER_XXL_STANDARD`: Enable standard subtitle formatting (default: true)
 
 ## Documentation
 
@@ -90,3 +105,4 @@ After starting the service, visit `http://localhost:9000` or `http://0.0.0.0:900
 ## Credits
 
 - This software uses libraries from the [FFmpeg](http://ffmpeg.org) project under the [LGPLv2.1](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+- Faster-Whisper-XXL is developed by [Purfview](https://github.com/Purfview/whisper-standalone-win)

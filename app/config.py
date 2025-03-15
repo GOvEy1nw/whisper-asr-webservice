@@ -8,7 +8,8 @@ class CONFIG:
     Configuration class for ASR models.
     Reads environment variables for runtime configuration, with sensible defaults.
     """
-    # Determine the ASR engine ('faster_whisper', 'openai_whisper' or 'whisperx')
+
+    # Determine the ASR engine ('faster_whisper', 'openai_whisper', 'whisperx' or 'faster_whisper_xxl')
     ASR_ENGINE = os.getenv("ASR_ENGINE", "openai_whisper")
 
     # Retrieve Huggingface Token
@@ -45,3 +46,8 @@ class CONFIG:
     SUBTITLE_MAX_LINE_WIDTH = int(os.getenv("SUBTITLE_MAX_LINE_WIDTH", 1000))
     SUBTITLE_MAX_LINE_COUNT = int(os.getenv("SUBTITLE_MAX_LINE_COUNT", 2))
     SUBTITLE_HIGHLIGHT_WORDS = os.getenv("SUBTITLE_HIGHLIGHT_WORDS", "false").lower() == "true"
+
+    # Faster-Whisper-XXL specific configurations
+    FASTER_WHISPER_XXL_PATH = os.getenv("FASTER_WHISPER_XXL_PATH", "/app/faster-whisper-xxl/whisper-faster-xxl")
+    FASTER_WHISPER_XXL_MAX_GAP = float(os.getenv("FASTER_WHISPER_XXL_MAX_GAP", "1.0"))
+    FASTER_WHISPER_XXL_STANDARD = os.getenv("FASTER_WHISPER_XXL_STANDARD", "true").lower() == "true"

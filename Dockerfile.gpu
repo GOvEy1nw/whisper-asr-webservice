@@ -16,6 +16,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3-pip \
     libcudnn8 \
     python3-pip \
+    wget \
+    p7zip-full \
+    libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
@@ -39,6 +42,14 @@ COPY . .
 COPY --from=ffmpeg /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=swagger-ui /usr/share/nginx/html/swagger-ui.css swagger-ui-assets/swagger-ui.css
 COPY --from=swagger-ui /usr/share/nginx/html/swagger-ui-bundle.js swagger-ui-assets/swagger-ui-bundle.js
+
+# Download and install Faster-Whisper-XXL
+RUN mkdir -p /app/faster-whisper-xxl && \
+    wget -q https://github.com/Purfview/whisper-standalone-win/releases/download/Faster-Whisper-XXL/Faster-Whisper-XXL_r245.2_linux.7z -O /tmp/faster-whisper-xxl.7z && \
+    7z x /tmp/faster-whisper-xxl.7z -o/app/faster-whisper-xxl && \
+    chmod +x /app/faster-whisper-xxl/whisper-faster-xxl && \
+    ln -s /app/faster-whisper-xxl/whisper-faster-xxl /usr/local/bin/whisper-faster-xxl && \
+    rm /tmp/faster-whisper-xxl.7z
 
 RUN poetry install
 RUN $POETRY_VENV/bin/pip install torch==2.6.0+cu126 torchaudio==2.6.0+cu126 --index-url https://download.pytorch.org/whl/cu126
